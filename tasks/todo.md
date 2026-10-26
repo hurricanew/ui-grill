@@ -7,7 +7,7 @@ See [plan.md](plan.md) for the order, time box and risks.
   - Verify: `npm run dev` renders the page; `npx vitest run` exits cleanly; `npx tsc -b --noEmit` passes.
   - Files: `package.json`, `vite.config.ts`, `tsconfig*.json`, `src/index.css`, `src/data/data.json`
 
-- [ ] **T2: Schema + origin allowlist, test first (10 min)**
+- [x] **T2: Schema + origin allowlist, test first (10 min)**
   - Acceptance: `LinkSchema` and `CreatorDataSchema` exist. `isAllowedUrl()` uses an exact `URL.origin` match against `ALLOWED_ORIGINS`. `parseCreatorData(raw)` returns `{ creator, links }`, drops invalid links with a dev warning, and never throws. Covers S1 and S2.
   - Verify: `npx vitest run src/lib/schema.test.ts` is green. The table test covers `javascript:`, `http:`, `example.com.evil.com`, `example.com@evil.com`, `www.`, `:8443`, an unparseable URL, a missing title, `tags: null`, and a valid record.
   - Files: `src/lib/schema.ts`, `src/lib/schema.test.ts`

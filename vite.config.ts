@@ -14,6 +14,9 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    reporters: ['verbose'],
+    // Print full interpolated test names (it.each $values) instead of truncating at 40 chars.
+    taskTitleValueFormatTruncate: 0,
     setupFiles: ['./src/test/setup.ts'],
   },
 })
