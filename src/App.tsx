@@ -7,6 +7,11 @@ import sampleData from '@/data/data.json'
 import { parseCreatorData } from '@/lib/schema'
 import { buildSearchIndex, filterLinks } from '@/lib/search'
 
+function formatCount(count: number): string {
+  if (count === 0) return 'No links'
+  return count === 1 ? '1 link' : `${count} links`
+}
+
 type AppProps = {
   // Untrusted input; defaults to the bundled data.json. Injectable for tests.
   data?: unknown
@@ -51,6 +56,10 @@ export default function App({ data = sampleData }: AppProps) {
     <main className="mx-auto max-w-xl space-y-6 px-4 py-12">
       <CreatorHeader creator={profile.creator} />
       <SearchBar ref={searchRef} value={query} onChange={setQuery} />
+      {/* A2: always mounted so screen readers hear each change. */}
+      <p role="status" aria-live="polite" className="text-sm text-muted-foreground">
+        {formatCount(results.length)}
+      </p>
       {results.length > 0 ? (
         <ul className={`space-y-3 transition-opacity ${isStale ? 'opacity-60' : ''}`}>
           {results.map((link) => (

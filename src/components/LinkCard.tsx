@@ -12,7 +12,7 @@ export function LinkCard({ link }: LinkCardProps) {
       href={link.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="block rounded-xl transition-shadow hover:shadow-md"
+      className="block rounded-xl transition-shadow outline-none hover:shadow-md focus-visible:ring-[3px] focus-visible:ring-ring/50"
     >
       <Card className="gap-3">
         <CardHeader>

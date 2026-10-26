@@ -118,6 +118,40 @@ describe('App (integration: typing in the search bar filters the rendered cards)
     })
   })
 
+  describe('accessibility (A1–A3)', () => {
+    it('the search input has an accessible label "Search links" from a <label> element (A1)', () => {
+      setup()
+      const input = screen.getByLabelText('Search links', { selector: 'input' })
+      expect(input).toBe(screen.getByRole('searchbox'))
+      expect(input).not.toHaveAttribute('aria-label')
+    })
+
+    it('a polite live region announces the result count: "5 links" initially (A2)', () => {
+      setup()
+      const status = screen.getByRole('status')
+      expect(status).toHaveAttribute('aria-live', 'polite')
+      expect(status).toHaveTextContent(/^5 links$/)
+    })
+
+    it.each([
+      { query: 'beginner', announced: '2 links', why: 'plural' },
+      { query: 'free drawing', announced: '1 link', why: 'singular' },
+      { query: 'zzz', announced: 'No links', why: 'zero results' },
+    ])('typing "$query" updates the live region to "$announced" ($why) (A2)', async ({ query, announced }) => {
+      const { user, input } = setup()
+      await user.type(input(), query)
+      // Exact match: a substring check would let "1 links" pass for "1 link".
+      await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(new RegExp(`^${announced}$`)))
+    })
+
+    it('Tab moves keyboard focus from the search bar to the first card link (A3)', async () => {
+      const { user, input } = setup()
+      await user.click(input())
+      await user.tab()
+      expect(screen.getByRole('link', { name: /shop my prints/i })).toHaveFocus()
+    })
+  })
+
   describe('untrusted data (S1, S2)', () => {
     let warn: MockInstance<typeof console.warn>
 

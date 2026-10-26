@@ -35,7 +35,7 @@ See [plan.md](plan.md) for the order, time box and risks.
   - Verify: `npx vitest run` (the whole suite) is green; `npm run build` passes.
   - Files: `src/App.test.tsx`
 
-- [ ] **T6: A11y pass + final check, stretch (4 min)**, skipped by decision
+- [x] **T6: A11y pass + final check, stretch (4 min)**
   - Acceptance: the input has a `<label>` (can be `sr-only`). The result count sits in an `aria-live="polite"` region. Cards show a visible focus ring. Covers A1–A3.
   - Verify: keyboard tab-through in the browser; add an assertion to `App.test.tsx` that finds the input via `getByLabelText`; then run `npx vitest run && npx tsc -b --noEmit && npm run build`.
   - Files: `src/components/SearchBar.tsx`, `src/components/LinkCard.tsx`, `src/App.tsx`, `src/App.test.tsx`
