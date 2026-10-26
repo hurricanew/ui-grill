@@ -12,7 +12,7 @@ See [plan.md](plan.md) for the order, time box and risks.
   - Verify: `npx vitest run src/lib/schema.test.ts` is green. The table test covers `javascript:`, `http:`, `example.com.evil.com`, `example.com@evil.com`, `www.`, `:8443`, an unparseable URL, a missing title, `tags: null`, and a valid record.
   - Files: `src/lib/schema.ts`, `src/lib/schema.test.ts`
 
-- [ ] **T3: Search logic, test first (8 min)**
+- [x] **T3: Search logic, test first (8 min)**
   - Acceptance: `buildSearchIndex()` keeps only active links and precomputes a lowercased `haystack`. `filterLinks()` does the trim, the 100-char cap and whitespace splitting, and returns links where every term matches. Source order is preserved. Covers B1–B5, B7, S5 and P1.
   - Verify: `npx vitest run src/lib/search.test.ts` is green. Sample-data cases: "" → 5, "art" → 3, "BEGINNER" → 2, "free drawing" → 1, "zzz" → 0, "podcast" → 1.
   - Files: `src/lib/search.ts`, `src/lib/search.test.ts`
