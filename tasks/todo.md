@@ -1,0 +1,33 @@
+# Tasks: Creator Link Search
+
+See [plan.md](plan.md) for the order, time box and risks.
+
+- [x] **T1: Scaffold (10 min)**
+  - Acceptance: Vite React-TS app with Tailwind v4 and shadcn (`card input badge button`). The `@/` alias works. Vitest + jsdom + RTL are configured. `data.json` has moved to `src/data/`. `zod` is installed.
+  - Verify: `npm run dev` renders the page; `npx vitest run` exits cleanly; `npx tsc -b --noEmit` passes.
+  - Files: `package.json`, `vite.config.ts`, `tsconfig*.json`, `src/index.css`, `src/data/data.json`
+
+- [ ] **T2: Schema + origin allowlist, test first (10 min)**
+  - Acceptance: `LinkSchema` and `CreatorDataSchema` exist. `isAllowedUrl()` uses an exact `URL.origin` match against `ALLOWED_ORIGINS`. `parseCreatorData(raw)` returns `{ creator, links }`, drops invalid links with a dev warning, and never throws. Covers S1 and S2.
+  - Verify: `npx vitest run src/lib/schema.test.ts` is green. The table test covers `javascript:`, `http:`, `example.com.evil.com`, `example.com@evil.com`, `www.`, `:8443`, an unparseable URL, a missing title, `tags: null`, and a valid record.
+  - Files: `src/lib/schema.ts`, `src/lib/schema.test.ts`
+
+- [ ] **T3: Search logic, test first (8 min)**
+  - Acceptance: `buildSearchIndex()` keeps only active links and precomputes a lowercased `haystack`. `filterLinks()` does the trim, the 100-char cap and whitespace splitting, and returns links where every term matches. Source order is preserved. Covers B1–B5, B7, S5 and P1.
+  - Verify: `npx vitest run src/lib/search.test.ts` is green. Sample-data cases: "" → 5, "art" → 3, "BEGINNER" → 2, "free drawing" → 1, "zzz" → 0, "podcast" → 1.
+  - Files: `src/lib/search.ts`, `src/lib/search.test.ts`
+
+- [ ] **T4: Components + wiring (15 min)**
+  - Acceptance: `CreatorHeader`, `SearchBar` (`maxLength={100}`), `LinkCard` (a single `<a>`, `target="_blank" rel="noopener noreferrer"`, no description line when null, tags as badges) and `NoResults` (echoes the query, has a "Clear search" button) exist. `App` keeps `query` state, uses `useDeferredValue`, wraps `filterLinks` in `useMemo`, keys cards by `link.id`, and builds the index once at module scope. No `dangerouslySetInnerHTML` anywhere. Covers B6, S3, S4 and P2–P4.
+  - Verify: manual check in `npm run dev` with the sample queries from T3; `grep -r dangerouslySetInnerHTML src` returns nothing; `tsc` passes.
+  - Files: `src/components/{CreatorHeader,SearchBar,LinkCard,NoResults}.tsx`, `src/App.tsx`
+
+- [ ] **T5: Integration test (6 min)**
+  - Acceptance: an RTL test renders `App` and checks: 5 cards initially; typing "beginner" leaves 2; typing "zzz" shows the no-results state with the query; "Clear search" brings back 5 cards; a card has the correct `href`, `target` and `rel`.
+  - Verify: `npx vitest run` (the whole suite) is green; `npm run build` passes.
+  - Files: `src/App.test.tsx`
+
+- [ ] **T6: A11y pass + final check, stretch (4 min)**
+  - Acceptance: the input has a `<label>` (can be `sr-only`). The result count sits in an `aria-live="polite"` region. Cards show a visible focus ring. Covers A1–A3.
+  - Verify: keyboard tab-through in the browser; add an assertion to `App.test.tsx` that finds the input via `getByLabelText`; then run `npx vitest run && npx tsc -b --noEmit && npm run build`.
+  - Files: `src/components/SearchBar.tsx`, `src/components/LinkCard.tsx`, `src/App.tsx`, `src/App.test.tsx`
