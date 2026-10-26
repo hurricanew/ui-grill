@@ -17,17 +17,25 @@ See [plan.md](plan.md) for the order, time box and risks.
   - Verify: `npx vitest run src/lib/search.test.ts` is green. Sample-data cases: "" → 5, "art" → 3, "BEGINNER" → 2, "free drawing" → 1, "zzz" → 0, "podcast" → 1.
   - Files: `src/lib/search.ts`, `src/lib/search.test.ts`
 
-- [ ] **T4: Components + wiring (15 min)**
+- [x] **T4: Components + wiring (15 min)**
   - Acceptance: `CreatorHeader`, `SearchBar` (`maxLength={100}`), `LinkCard` (a single `<a>`, `target="_blank" rel="noopener noreferrer"`, no description line when null, tags as badges) and `NoResults` (echoes the query, has a "Clear search" button) exist. `App` keeps `query` state, uses `useDeferredValue`, wraps `filterLinks` in `useMemo`, keys cards by `link.id`, and builds the index once at module scope. No `dangerouslySetInnerHTML` anywhere. Covers B6, S3, S4 and P2–P4.
-  - Verify: manual check in `npm run dev` with the sample queries from T3; `grep -r dangerouslySetInnerHTML src` returns nothing; `tsc` passes.
+  - UI contract fixed by `App.test.tsx` (T5 was written first):
+    - `App` takes an optional `data?: unknown` prop (defaults to `data.json`) and parses and indexes it in `useMemo`.
+    - If the payload is invalid, the page shows "This profile is unavailable." and no search bar.
+    - The creator name is an `<h1>`.
+    - The search input is `type="search"` with `maxLength={100}`.
+    - Each card is one `<a>` that contains an `<h2>` title and tags as separate elements.
+    - The no-results text reads `No links match "…"`.
+    - The "Clear search" button empties the input and moves focus back to it.
+  - Verify: `npx vitest run src/App.test.tsx` goes green (14 tests); manual check in `npm run dev` with the sample queries from T3; `grep -r dangerouslySetInnerHTML src` returns nothing; `tsc` passes.
   - Files: `src/components/{CreatorHeader,SearchBar,LinkCard,NoResults}.tsx`, `src/App.tsx`
 
-- [ ] **T5: Integration test (6 min)**
+- [x] **T5: Integration test (6 min)**, written before T4 as its red test
   - Acceptance: an RTL test renders `App` and checks: 5 cards initially; typing "beginner" leaves 2; typing "zzz" shows the no-results state with the query; "Clear search" brings back 5 cards; a card has the correct `href`, `target` and `rel`.
   - Verify: `npx vitest run` (the whole suite) is green; `npm run build` passes.
   - Files: `src/App.test.tsx`
 
-- [ ] **T6: A11y pass + final check, stretch (4 min)**
+- [ ] **T6: A11y pass + final check, stretch (4 min)**, skipped by decision
   - Acceptance: the input has a `<label>` (can be `sr-only`). The result count sits in an `aria-live="polite"` region. Cards show a visible focus ring. Covers A1–A3.
   - Verify: keyboard tab-through in the browser; add an assertion to `App.test.tsx` that finds the input via `getByLabelText`; then run `npx vitest run && npx tsc -b --noEmit && npm run build`.
   - Files: `src/components/SearchBar.tsx`, `src/components/LinkCard.tsx`, `src/App.tsx`, `src/App.test.tsx`
