@@ -1,0 +1,57 @@
+{
+  "creator": {
+    "id": "creator_001",
+    "name": "Maya Creates",
+    "bio": "Illustrator, educator and occasional podcast host."
+  },
+  "links": [
+    {
+      "id": "link_001",
+      "title": "Shop my prints",
+      "url": "https://example.com/prints",
+      "description": "Limited edition illustrations and art prints.",
+      "tags": ["shop", "art", "prints"],
+      "active": true
+    },
+    {
+      "id": "link_002",
+      "title": "Learn watercolour",
+      "url": "https://example.com/classes",
+      "description": "Beginner-friendly paid classes. New sessions monthly.",
+      "tags": ["classes", "art", "beginner"],
+      "active": true
+    },
+    {
+      "id": "link_003",
+      "title": "Free drawing starter kit",
+      "url": "https://example.com/starter-kit",
+      "description": "Download five exercises to start drawing today.",
+      "tags": ["free", "drawing", "beginner"],
+      "active": true
+    },
+    {
+      "id": "link_004",
+      "title": "The Creative Break podcast",
+      "url": "https://example.com/podcast",
+      "description": null,
+      "tags": ["podcast", "creativity"],
+      "active": true
+    },
+    {
+      "id": "link_005",
+      "title": "Book a commission",
+      "url": "https://example.com/commissions",
+      "description": "Custom illustrations for individuals and businesses.",
+      "tags": ["commissions", "art"],
+      "active": false
+    },
+    {
+      "id": "link_006",
+      "title": "Join my newsletter",
+      "url": "https://example.com/newsletter",
+      "description": "Monthly studio updates, new work and upcoming classes.",
+      "tags": ["newsletter", "updates"],
+      "active": true
+    }
+  ]
+}
