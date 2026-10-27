@@ -18,14 +18,14 @@ describe('buildSearchIndex (B1 active only, P1 normalise once)', () => {
     expect(index.map((link) => link.id)).toEqual(ALL_ACTIVE)
   })
 
-  it('precomputes a lowercased haystack of title, description and tags', () => {
+  it('precomputes lowercased, de-duplicated words from title, description and tags, split on punctuation ("prints." → "prints")', () => {
     const prints = index.find((link) => link.id === 'link_001')
-    expect(prints?.haystack).toBe('shop my prints limited edition illustrations and art prints. shop art prints')
+    expect(prints?.words).toEqual(['shop', 'my', 'prints', 'limited', 'edition', 'illustrations', 'and', 'art'])
   })
 
-  it('leaves description out of the haystack when it is null, instead of indexing the text "null" (B4)', () => {
+  it('leaves description out of the words when it is null, instead of indexing the text "null" (B4)', () => {
     const podcast = index.find((link) => link.id === 'link_004')
-    expect(podcast?.haystack).toBe('the creative break podcast podcast creativity')
+    expect(podcast?.words).toEqual(['the', 'creative', 'break', 'podcast', 'creativity'])
   })
 })
 
@@ -40,7 +40,7 @@ describe('filterLinks (business logic over the sample data)', () => {
     })
   })
 
-  describe('matching rules (B3 title/description/tags, case-insensitive substring; B7 source order)', () => {
+  describe('matching rules (B3 title/description/tags, case-insensitive word prefix; B7 source order)', () => {
     it.each([
       { query: 'prints', expected: ['link_001'], why: 'title match' },
       { query: 'monthly', expected: ['link_002', 'link_006'], why: 'description match, across two links in source order' },
@@ -48,8 +48,10 @@ describe('filterLinks (business logic over the sample data)', () => {
       { query: 'podcast', expected: ['link_004'], why: 'title and tag match on the same link return it once' },
       { query: 'BEGINNER', expected: ['link_002', 'link_003'], why: 'upper-case query matches lower-case tag' },
       { query: 'WaTeRcOlOuR', expected: ['link_002'], why: 'mixed-case query matches title' },
-      { query: 'art', expected: ['link_001', 'link_002', 'link_003'], why: 'substring: also matches "starter" in link_003 (accepted trade-off)' },
-      { query: 'news', expected: ['link_006'], why: 'partial word matches as a substring' },
+      { query: 'art', expected: ['link_001', 'link_002'], why: 'whole word "art" matches; "starter" in link_003 does NOT, because "art" is not at its start' },
+      { query: 'start', expected: ['link_003'], why: 'prefix of "starter" (title) and the word "start" (description)' },
+      { query: 'news', expected: ['link_006'], why: 'prefix of the word "newsletter"' },
+      { query: 'illus', expected: ['link_001'], why: 'prefix of a description word ("illustrations")' },
     ])('"$query" → $expected — $why', ({ query, expected }) => {
       expect(ids(query)).toEqual(expected)
     })
@@ -61,7 +63,7 @@ describe('filterLinks (business logic over the sample data)', () => {
       { query: 'drawing free', expected: ['link_003'], why: 'term order does not matter' },
       { query: '  free    drawing  ', expected: ['link_003'], why: 'extra and surrounding whitespace is ignored' },
       { query: 'podcast creativity', expected: ['link_004'], why: 'terms may match different fields (title + tag)' },
-      { query: 'art beginner', expected: ['link_002', 'link_003'], why: 'AND across terms narrows the "art" results' },
+      { query: 'art beginner', expected: ['link_002'], why: 'AND across terms; link_003 is beginner but has no word starting with "art"' },
       { query: 'art podcast', expected: [], why: 'no single link has both terms, so nothing matches' },
     ])('"$query" → $expected — $why', ({ query, expected }) => {
       expect(ids(query)).toEqual(expected)
@@ -73,6 +75,10 @@ describe('filterLinks (business logic over the sample data)', () => {
       { query: 'zzz', why: 'term appears nowhere' },
       { query: 'commission', why: 'only matches link_005, which is inactive (B1)' },
       { query: 'null', why: 'a null description is not searchable as the text "null" (B4)' },
+      { query: 'rints', why: 'mid-word text is not a word prefix (B3; substring would have matched "prints")' },
+      { query: 'tarter', why: 'mid-word text is not a word prefix (B3)' },
+      { query: 'free-drawing', why: 'query is split on whitespace only (B5), and no indexed word contains "-"' },
+      { query: 'prints.', why: 'trailing punctuation is part of the term; indexed words have none' },
     ])('"$query" → [] — $why', ({ query }) => {
       expect(ids(query)).toEqual([])
     })

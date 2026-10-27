@@ -24,9 +24,9 @@ A single page showing one creator's profile and their **active** links as cards.
 **Business logic**
 - B1. Only `active: true` links are shown.
 - B2. Empty or whitespace-only query → all active links, in source order.
-- B3. Matching is case-insensitive substring over title, description, and tags.
+- B3. **Word-prefix matching** (changed from substring on 2026-10-27). Title, description and tags are split into words on any run of non-letter, non-digit characters (Unicode-aware: `/[^\p{L}\p{N}]+/u`, a fixed constant, never built from input). A query term matches a link when it is the **start of one of its words**, case-insensitively. "art" matches "art" and "artist" but not "starter"; "news" matches "newsletter"; "rints" matches nothing.
 - B4. `description: null` is valid. It is not rendered and never throws during search.
-- B5. Multi-word query: split on whitespace. A link matches when **every** term appears in its searchable text.
+- B5. Multi-word query: split on whitespace. A link matches when **every** term appears in its searchable text (under B3, "appears" means it is the start of one of the link's words).
 - B6. Zero matches → a no-results message that echoes the (escaped) query, plus a "Clear search" action.
 - B7. Results keep source order (no ranking).
 
@@ -84,25 +84,32 @@ Pure logic in `lib/`, components stay thin. Named exports, explicit types at mod
 
 ```ts
 // lib/search.ts
-export type IndexedLink = Link & { haystack: string };
+export type IndexedLink = Link & { words: readonly string[] };
 
 export const MAX_QUERY_LENGTH = 100;
+
+const WORD_SEPARATOR = /[^\p{L}\p{N}]+/u; // constant: never built from input
+
+export function toWords(text: string): string[] {
+  return text.toLowerCase().split(WORD_SEPARATOR).filter(Boolean);
+}
 
 export function buildSearchIndex(links: Link[]): IndexedLink[] {
   return links
     .filter((link) => link.active)
     .map((link) => ({
       ...link,
-      haystack: [link.title, link.description ?? "", ...link.tags]
-        .join(" ")
-        .toLowerCase(),
+      // P1: tokenised once; duplicates removed so each check scans fewer words.
+      words: [...new Set(toWords([link.title, link.description ?? "", ...link.tags].join(" ")))],
     }));
 }
 
 export function filterLinks(index: IndexedLink[], query: string): IndexedLink[] {
-  const terms = query.slice(0, MAX_QUERY_LENGTH).toLowerCase().split(/\s+/).filter(Boolean);
-  if (terms.length === 0) return index;
-  return index.filter((link) => terms.every((term) => link.haystack.includes(term)));
+  const terms = query.trim().slice(0, MAX_QUERY_LENGTH).toLowerCase().split(/\s+/).filter(Boolean); // B5 unchanged
+  if (terms.length === 0) return index; // B2
+  return index.filter((link) =>
+    terms.every((term) => link.words.some((word) => word.startsWith(term))),
+  );
 }
 ```
 
@@ -123,12 +130,12 @@ export function filterLinks(index: IndexedLink[], query: string): IndexedLink[] 
 ## Success Criteria
 
 - `npx vitest run`, `npx tsc -b --noEmit`, and `npm run build` all pass.
-- With the sample data: 5 cards show initially (`link_005` is inactive). "art" → 3 cards (prints, watercolour, starter kit, since "start" contains "art"). "BEGINNER" → 2. "free drawing" → 1. "zzz" → no-results state. "podcast" → 1 card with no description line.
+- With the sample data: 5 cards show initially (`link_005` is inactive). "art" → 2 cards (prints, watercolour; **not** the starter kit). "start" → 1 (starter kit). "news" → 1 (newsletter). "rints" → no-results. "(" and "free-drawing" → no-results (a term containing punctuation can't be the start of a letters-and-digits word). "BEGINNER" → 2. "free drawing" → 1. "zzz" → no-results state. "podcast" → 1 card with no description line.
 - Injecting records with `url: "javascript:alert(1)"` or `url: "https://example.com@evil.com"` into the data results in no card for either and no error.
 
 ## Decisions (resolved 2026-10-27)
 
-1. **Matching:** plain substring. "art" matching "starter" is accepted and called out as a known trade-off (word-prefix is the follow-up).
+1. **Matching:** ~~plain substring~~ → **word-prefix**, superseded 2026-10-27 at the user's request, because "art" returned "starter" results. See B3. Query splitting (B5) is unchanged.
 2. **Invalid links:** dropped at load, with a dev-only `console.warn`. They are not rendered as disabled cards.
 3. **Data loading:** a static `import` of `src/data/data.json`. There is no fetch and no loading state.
 4. **URL allowlist:** exact `origin` match against `["https://example.com"]`. Subdomains are not allowed.

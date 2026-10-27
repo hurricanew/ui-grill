@@ -17,7 +17,7 @@
 - Allowlist link origins: only `https://example.com` (exact `URL.origin` match). Everything else is dropped, including other schemes like `javascript:`, look-alike hosts and subdomains.
 - Render all text through React only. No `dangerouslySetInnerHTML`, including for any match highlighting.
 - Outbound links: `target="_blank" rel="noopener noreferrer"`.
-- Search input: trim and cap length (e.g. 100 chars). Never build a regex from user input; use plain substring matching.
+- Search input: trim and cap length (e.g. 100 chars). Never build a regex from user input. Match each query word against the start of words in the data (word-prefix).
 
 ## 2. Business logic
 

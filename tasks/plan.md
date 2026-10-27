@@ -49,4 +49,4 @@ T2 and T3 both depend only on the `Link` type. The type is defined first in T2, 
 - **Why no `useEffect` filtering:** filtered results are derived state, and syncing them through an effect causes a double render and a stale frame.
 - **Why `useDeferredValue` and not debounce:** it never delays the input itself, and it lets React drop stale renders.
 - **What was skipped on purpose, and why:** virtualization, fuzzy search, ranking. A linear scan of about 1k links is under 1 ms.
-- **Known trade-off:** substring matching means "art" matches "starter". Word-prefix matching is the next step.
+- **Word-prefix matching:** "art" matches "art"/"artist" but not "starter". Words in the data are split on punctuation by a constant regex, and the query is split on whitespace only, so a term like "free-drawing" finds nothing (known limitation).
