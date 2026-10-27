@@ -42,11 +42,11 @@ See [plan.md](plan.md) for the order, time box and risks.
 
 ## Feature: Tag filter (SPEC TF1–TF11)
 
-- [ ] **TF-A: Logic (test first)**
+- [x] **TF-A: Logic (test first)**
   - Acceptance: `filterLinks(index, query, tags = [])` does exact, case-insensitive tag matching with AND, combined with the text query by AND. Each link's lowercased tags are precomputed into `tagSet`. The schema rejects empty or whitespace-only tags.
   - Verify: `npx vitest run src/lib` is green.
   - Files: `src/lib/search.ts`, `src/lib/search.test.ts`, `src/lib/schema.ts`, `src/lib/schema.test.ts`
-- [ ] **TF-B: Card restructure (stretched link + tag buttons)**
+- [x] **TF-B: Card restructure (stretched link + tag buttons)**
   - Acceptance:
     - The card is an `<article>` labelled by its title.
     - The title `<a>` keeps `target` and `rel`, and an overlay keeps the whole card clickable.
@@ -54,7 +54,7 @@ See [plan.md](plan.md) for the order, time box and risks.
     - The integration tests that depended on the old card structure are updated.
   - Verify: `npm test` is green.
   - Files: `src/components/LinkCard.tsx`, `src/App.test.tsx`
-- [ ] **TF-C: Pill search box + wiring**
+- [x] **TF-C: Pill search box + wiring**
   - Acceptance:
     - Pills appear inside the search box, in a list labelled "Selected tags".
     - × removes a pill, Backspace in an empty input removes the last one, and both return focus to the input.

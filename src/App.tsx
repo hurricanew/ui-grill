@@ -29,16 +29,35 @@ export default function App({ data = sampleData }: AppProps) {
   const deferredQuery = useDeferredValue(query)
   const isStale = query !== deferredQuery
 
+  // TF1: pills apply immediately (not deferred). Stored with original casing
+  // for display; compared lowercased (TF2).
+  const [tags, setTags] = useState<string[]>([])
+  const selectedTags = useMemo(() => new Set(tags.map((tag) => tag.toLowerCase())), [tags])
+
   // P2: results are derived, never stored in state.
   const results = useMemo(
-    () => (profile ? filterLinks(profile.index, deferredQuery) : []),
-    [profile, deferredQuery],
+    () => (profile ? filterLinks(profile.index, deferredQuery, tags) : []),
+    [profile, deferredQuery, tags],
   )
 
   const searchRef = useRef<HTMLInputElement>(null)
 
+  // TF5: a tag already selected is a no-op. TF9: only called with tags
+  // from validated links, never with typed text.
+  function addTag(tag: string) {
+    if (selectedTags.has(tag.toLowerCase())) return
+    setTags((current) => [...current, tag])
+  }
+
+  // TF6: removing a pill returns focus to the input.
+  function removeTag(tag: string) {
+    setTags((current) => current.filter((selected) => selected !== tag))
+    searchRef.current?.focus()
+  }
+
   function clearSearch() {
     setQuery('')
+    setTags([])
     searchRef.current?.focus()
   }
 
@@ -55,7 +74,13 @@ export default function App({ data = sampleData }: AppProps) {
   return (
     <main className="mx-auto max-w-xl space-y-6 px-4 py-12">
       <CreatorHeader creator={profile.creator} />
-      <SearchBar ref={searchRef} value={query} onChange={setQuery} />
+      <SearchBar
+        ref={searchRef}
+        value={query}
+        onChange={setQuery}
+        tags={tags}
+        onRemoveTag={removeTag}
+      />
       {/* A2: always mounted so screen readers hear each change. */}
       <p role="status" aria-live="polite" className="text-sm text-muted-foreground">
         {formatCount(results.length)}
@@ -64,12 +89,12 @@ export default function App({ data = sampleData }: AppProps) {
         <ul className={`space-y-3 transition-opacity ${isStale ? 'opacity-60' : ''}`}>
           {results.map((link) => (
             <li key={link.id}>
-              <LinkCard link={link} />
+              <LinkCard link={link} selectedTags={selectedTags} onTagClick={addTag} />
             </li>
           ))}
         </ul>
       ) : (
-        <NoResults query={deferredQuery.trim()} onClear={clearSearch} />
+        <NoResults query={deferredQuery.trim()} tags={tags} onClear={clearSearch} />
       )}
     </main>
   )

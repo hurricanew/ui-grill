@@ -165,6 +165,118 @@ describe('App (integration: typing in the search bar filters the rendered cards)
     })
   })
 
+  describe('tag filter (TF1–TF7, TF11)', () => {
+    function pills(): string[] {
+      return screen
+        .queryAllByRole('button', { name: /^Remove tag / })
+        .map((button) => (button.getAttribute('aria-label') ?? '').replace('Remove tag ', ''))
+    }
+
+    function tagButton(cardTitle: string, tag: string) {
+      return within(card(cardTitle)).getByRole('button', { name: `Filter by tag ${tag}` })
+    }
+
+    it('clicking "art" on a card adds an "art" pill to the search box and immediately shows only the 2 active art links (TF1, TF2)', async () => {
+      const { user } = setup()
+      await user.click(tagButton('Shop my prints', 'art'))
+      expect(within(screen.getByRole('list', { name: 'Selected tags' })).getByText('art')).toBeInTheDocument()
+      expect(pills()).toEqual(['art'])
+      expect(cardTitles()).toEqual(['Shop my prints', 'Learn watercolour'])
+      expect(tagButton('Shop my prints', 'art')).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.getByRole('status')).toHaveTextContent(/^2 links$/)
+    })
+
+    it('a second tag ANDs with the first: "art" then "beginner" leaves only Learn watercolour (TF3)', async () => {
+      const { user } = setup()
+      await user.click(tagButton('Shop my prints', 'art'))
+      await user.click(tagButton('Learn watercolour', 'beginner'))
+      expect(pills()).toEqual(['art', 'beginner'])
+      expect(cardTitles()).toEqual(['Learn watercolour'])
+    })
+
+    it('clicking a tag that is already a pill does not add a duplicate (TF5)', async () => {
+      const { user } = setup()
+      await user.click(tagButton('Shop my prints', 'art'))
+      await user.click(tagButton('Learn watercolour', 'art'))
+      expect(pills()).toEqual(['art'])
+      expect(cardTitles()).toEqual(['Shop my prints', 'Learn watercolour'])
+    })
+
+    it('a pill ANDs with typed text: "beginner" pill + "free" leaves only the starter kit (TF4)', async () => {
+      const { user, input } = setup()
+      await user.click(tagButton('Learn watercolour', 'beginner'))
+      expect(cardTitles()).toEqual(['Learn watercolour', 'Free drawing starter kit'])
+      await user.type(input(), 'free')
+      await waitFor(() => expect(cardTitles()).toEqual(['Free drawing starter kit']))
+    })
+
+    it('no-results message echoes both text and tags: No links match "zzz" tagged art (TF7)', async () => {
+      const { user, input } = setup()
+      await user.click(tagButton('Shop my prints', 'art'))
+      await user.type(input(), 'zzz')
+      await waitFor(() => expect(cardTitles()).toEqual([]))
+      expect(screen.getByText(/no links match/i)).toHaveTextContent(/^No links match "zzz" tagged art$/)
+    })
+
+    it('the pill × button removes that tag, restores all links and returns focus to the input (TF6)', async () => {
+      const { user, input } = setup()
+      await user.click(tagButton('Shop my prints', 'art'))
+      await user.click(screen.getByRole('button', { name: 'Remove tag art' }))
+      expect(pills()).toEqual([])
+      expect(screen.queryByRole('list', { name: 'Selected tags' })).not.toBeInTheDocument()
+      expect(cardTitles()).toEqual(ALL_ACTIVE_TITLES)
+      expect(input()).toHaveFocus()
+    })
+
+    it('Backspace in the empty input removes the last pill, one per press (TF6)', async () => {
+      const { user, input } = setup()
+      await user.click(tagButton('Shop my prints', 'art'))
+      await user.click(tagButton('Learn watercolour', 'beginner'))
+      await user.click(input())
+      await user.keyboard('{Backspace}')
+      expect(pills()).toEqual(['art'])
+      await user.keyboard('{Backspace}')
+      expect(pills()).toEqual([])
+      expect(cardTitles()).toEqual(ALL_ACTIVE_TITLES)
+    })
+
+    it('Backspace with text in the input deletes a character, not a pill (TF6)', async () => {
+      const { user, input } = setup()
+      await user.click(tagButton('Shop my prints', 'art'))
+      await user.type(input(), 'sh{Backspace}')
+      expect(input()).toHaveValue('s')
+      expect(pills()).toEqual(['art'])
+    })
+
+    it('"Clear search" removes the text and every pill (TF6)', async () => {
+      const { user, input } = setup()
+      await user.click(tagButton('Shop my prints', 'art'))
+      expect(pills()).toEqual(['art'])
+      await user.type(input(), 'zzz')
+      await user.click(await screen.findByRole('button', { name: /clear search/i }))
+      expect(pills()).toEqual([])
+      expect(input()).toHaveValue('')
+      await waitFor(() => expect(cardTitles()).toEqual(ALL_ACTIVE_TITLES))
+    })
+
+    it('typing a tag name searches text but never creates a pill (TF9)', async () => {
+      const { user, input } = setup()
+      await user.type(input(), 'art')
+      await waitFor(() => expect(cardTitles()).toEqual(['Shop my prints', 'Learn watercolour']))
+      expect(pills()).toEqual([])
+    })
+
+    it('clicking a tag does not navigate or open the card link (TF8)', async () => {
+      const { user } = setup()
+      const before = window.location.href
+      const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+      await user.click(tagButton('Shop my prints', 'shop'))
+      expect(window.location.href).toBe(before)
+      expect(open).not.toHaveBeenCalled()
+      open.mockRestore()
+    })
+  })
+
   describe('untrusted data (S1, S2)', () => {
     let warn: MockInstance<typeof console.warn>
 
