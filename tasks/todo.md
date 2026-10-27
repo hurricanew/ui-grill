@@ -39,3 +39,27 @@ See [plan.md](plan.md) for the order, time box and risks.
   - Acceptance: the input has a `<label>` (can be `sr-only`). The result count sits in an `aria-live="polite"` region. Cards show a visible focus ring. Covers A1–A3.
   - Verify: keyboard tab-through in the browser; add an assertion to `App.test.tsx` that finds the input via `getByLabelText`; then run `npx vitest run && npx tsc -b --noEmit && npm run build`.
   - Files: `src/components/SearchBar.tsx`, `src/components/LinkCard.tsx`, `src/App.tsx`, `src/App.test.tsx`
+
+## Feature: Tag filter (SPEC TF1–TF11)
+
+- [ ] **TF-A: Logic (test first)**
+  - Acceptance: `filterLinks(index, query, tags = [])` does exact, case-insensitive tag matching with AND, combined with the text query by AND. Each link's lowercased tags are precomputed into `tagSet`. The schema rejects empty or whitespace-only tags.
+  - Verify: `npx vitest run src/lib` is green.
+  - Files: `src/lib/search.ts`, `src/lib/search.test.ts`, `src/lib/schema.ts`, `src/lib/schema.test.ts`
+- [ ] **TF-B: Card restructure (stretched link + tag buttons)**
+  - Acceptance:
+    - The card is an `<article>` labelled by its title.
+    - The title `<a>` keeps `target` and `rel`, and an overlay keeps the whole card clickable.
+    - Tags are buttons, never inside an `<a>`, labelled "Filter by tag {tag}" with `aria-pressed`.
+    - The integration tests that depended on the old card structure are updated.
+  - Verify: `npm test` is green.
+  - Files: `src/components/LinkCard.tsx`, `src/App.test.tsx`
+- [ ] **TF-C: Pill search box + wiring**
+  - Acceptance:
+    - Pills appear inside the search box, in a list labelled "Selected tags".
+    - × removes a pill, Backspace in an empty input removes the last one, and both return focus to the input.
+    - "Clear search" clears the text and the pills.
+    - Tags are not deferred.
+    - The no-results message echoes both the query and the tags.
+  - Verify: `npm test`, `npm run typecheck`, `npm run lint` and `npm run build` all pass.
+  - Files: `src/components/SearchBar.tsx`, `src/components/NoResults.tsx`, `src/App.tsx`, `src/App.test.tsx`

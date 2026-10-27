@@ -29,7 +29,8 @@ export const LinkSchema = z.object({
     .refine(isAllowedUrl, { message: 'URL origin is not allowlisted' })
     .transform((value) => new URL(value).href),
   description: z.string().nullable(),
-  tags: z.array(z.string()),
+  // TF9: no empty tags, so no empty badge or pill can be rendered.
+  tags: z.array(z.string().trim().min(1)),
   active: z.boolean(),
 })
 

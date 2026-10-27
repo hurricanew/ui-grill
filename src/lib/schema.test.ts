@@ -13,6 +13,9 @@ const validLink = {
 
 const creator = { id: 'creator_001', name: 'Maya Creates', bio: 'Illustrator.' }
 
+// Distinct id, so an invalid link can't be dropped as a duplicate of validLink instead.
+const invalidBase = { ...validLink, id: 'link_bad' }
+
 function withLinks(links: unknown[]) {
   return { creator, links }
 }
@@ -83,15 +86,17 @@ describe('parseCreatorData (S1: validate untrusted data at the boundary)', () =>
   })
 
   it.each([
-    { name: 'url with a disallowed origin (javascript:)', link: { ...validLink, url: 'javascript:alert(1)' } },
-    { name: 'url using the userinfo trick', link: { ...validLink, url: 'https://example.com@evil.com/' } },
-    { name: 'missing title', link: { ...validLink, title: undefined } },
-    { name: 'whitespace-only title', link: { ...validLink, title: '   ' } },
-    { name: 'tags: null', link: { ...validLink, tags: null } },
-    { name: 'tags containing a non-string', link: { ...validLink, tags: ['ok', 42] } },
-    { name: 'active as the string "true"', link: { ...validLink, active: 'true' } },
-    { name: 'description as a number', link: { ...validLink, description: 123 } },
-    { name: 'missing id', link: { ...validLink, id: undefined } },
+    { name: 'url with a disallowed origin (javascript:)', link: { ...invalidBase, url: 'javascript:alert(1)' } },
+    { name: 'url using the userinfo trick', link: { ...invalidBase, url: 'https://example.com@evil.com/' } },
+    { name: 'missing title', link: { ...invalidBase, title: undefined } },
+    { name: 'whitespace-only title', link: { ...invalidBase, title: '   ' } },
+    { name: 'tags: null', link: { ...invalidBase, tags: null } },
+    { name: 'tags containing a non-string', link: { ...invalidBase, tags: ['ok', 42] } },
+    { name: 'an empty-string tag (TF9)', link: { ...invalidBase, tags: ['ok', ''] } },
+    { name: 'a whitespace-only tag (TF9)', link: { ...invalidBase, tags: ['   '] } },
+    { name: 'active as the string "true"', link: { ...invalidBase, active: 'true' } },
+    { name: 'description as a number', link: { ...invalidBase, description: 123 } },
+    { name: 'missing id', link: { ...invalidBase, id: undefined } },
     { name: 'a non-object entry (string)', link: 'https://example.com' },
     { name: 'a null entry', link: null },
   ])('drops a link with $name, keeps the valid ones, and warns instead of throwing', ({ link }) => {

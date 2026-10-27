@@ -39,7 +39,29 @@ A single page showing one creator's profile and their **active** links as cards.
 **A11y (stretch)**
 - A1. The search input has a visible or `sr-only` `<label>`.
 - A2. The result count ("3 links") is in an `aria-live="polite"` region.
-- A3. Each card is a single `<a>` with a visible focus ring.
+- A3. ~~Each card is a single `<a>`~~ (superseded by TF8). Each card has one link, its title, with a visible focus ring; the whole card stays clickable.
+
+**Tag filter** (added 2026-10-27, status: approved)
+- TF1. Each tag on a card is a `<button>`. Clicking it (or pressing Enter/Space on it) adds that tag as a **pill** inside the search box, and the cards update immediately. Pills are not deferred; the text query still uses `useDeferredValue`.
+- TF2. A pill filters by **exact** tag match, case-insensitive: the pill `art` matches the tag `art`, never `artist`. This is unlike text search, which uses word-prefix matching (B3).
+- TF3. **Several pills are combined with AND.** A link must have every selected tag.
+- TF4. Pills and text are also combined with AND: the result is the active links (B1) that have every selected tag *and* match the text query (B3/B5). Text search still covers tags.
+- TF5. Clicking a tag that's already a pill does nothing: no duplicate, no toggle.
+- TF6. Removing pills:
+  - each pill has a × `<button>` labelled "Remove tag {tag}"
+  - Backspace in an **empty** input removes the last pill
+  - "Clear search" clears the text and every pill
+  - Removing a pill moves focus to the input.
+- TF7. B2 is extended: no text and no pills → all active links. B6 is extended: the no-results message echoes both, e.g. `No links match "zzz" tagged art, beginner`.
+- TF8. **Card structure** (stretched link). An `<a>` inside the `<h2>` holds the URL, and an `after:absolute after:inset-0` overlay keeps the whole card clickable. Tag buttons are `relative z-10`, layered above the overlay, so a tag click never opens the link. No interactive element is nested inside another. S4 (`target`/`rel`) still applies to the title link.
+- TF9. **Security.** Tags are untrusted data rendered as React text only (S3). Pills can only be created from tags that exist on a validated link; nothing the visitor types becomes a pill. The schema now rejects empty-string tags (`z.string().trim().min(1)`), so an empty pill or badge can't appear.
+- TF10. **Logic stays pure.** `filterLinks(index, query, tags)` gets a third parameter `tags: readonly string[]`, defaulting to `[]` so existing calls still work. Each link's lowercased tags are precomputed once into the index as a `tagSet` (P1).
+- TF11. **A11y.**
+  - Pills sit in a list labelled "Selected tags".
+  - Each tag button's accessible name is "Filter by tag {tag}", and it shows `aria-pressed="true"` while selected.
+  - The existing live region (A2) announces the new count.
+
+Out of scope for the tag filter: keeping tags in the URL, a list of all tags, OR logic, tag autocomplete, and turning typed text into pills.
 
 ## Tech Stack
 
@@ -131,6 +153,13 @@ export function filterLinks(index: IndexedLink[], query: string): IndexedLink[] 
 
 - `npx vitest run`, `npx tsc -b --noEmit`, and `npm run build` all pass.
 - With the sample data: 5 cards show initially (`link_005` is inactive). "art" → 2 cards (prints, watercolour; **not** the starter kit). "start" → 1 (starter kit). "news" → 1 (newsletter). "rints" → no-results. "(" and "free-drawing" → no-results (a term containing punctuation can't be the start of a letters-and-digits word). "BEGINNER" → 2. "free drawing" → 1. "zzz" → no-results state. "podcast" → 1 card with no description line.
+- Tag filter with the sample data:
+  - Clicking `art` on any card leaves 2 cards (prints, watercolour; the inactive commission link stays hidden).
+  - Then clicking `beginner` leaves 1 (watercolour).
+  - The `beginner` pill plus the text "free" leaves 1 (starter kit).
+  - The `art` pill plus "zzz" shows `No links match "zzz" tagged art`.
+  - Removing the pills with × or Backspace restores the previous results.
+  - A tag click never changes `window.location` or opens a tab.
 - Injecting records with `url: "javascript:alert(1)"` or `url: "https://example.com@evil.com"` into the data results in no card for either and no error.
 
 ## Decisions (resolved 2026-10-27)

@@ -111,3 +111,40 @@ describe('filterLinks (business logic over the sample data)', () => {
     })
   })
 })
+
+describe('tag filter (TF2–TF4, TF10)', () => {
+  function tagIds(query: string, tags: string[]): string[] {
+    return filterLinks(index, query, tags).map((link) => link.id)
+  }
+
+  it('precomputes each link\'s lowercased tags as a set (TF10)', () => {
+    const prints = index.find((link) => link.id === 'link_001')
+    expect([...(prints?.tagSet ?? [])]).toEqual(['shop', 'art', 'prints'])
+  })
+
+  it('no text and no tags → all 5 active links; omitting the tags argument behaves the same (TF7, B2)', () => {
+    expect(tagIds('', [])).toEqual(ALL_ACTIVE)
+    expect(ids('')).toEqual(ALL_ACTIVE)
+  })
+
+  it.each([
+    { tags: ['art'], expected: ['link_001', 'link_002'], why: 'exact tag; inactive link_005 (also tagged art) stays hidden (B1)' },
+    { tags: ['ART'], expected: ['link_001', 'link_002'], why: 'case-insensitive (TF2)' },
+    { tags: ['creativity'], expected: ['link_004'], why: 'tag on a link whose description is null' },
+    { tags: ['ar'], expected: [], why: 'exact match only: "ar" is not the tag "art", unlike word-prefix text search (TF2)' },
+    { tags: ['art', 'beginner'], expected: ['link_002'], why: 'several tags combine with AND (TF3)' },
+    { tags: ['art', 'podcast'], expected: [], why: 'no link has both tags (TF3)' },
+    { tags: ['commissions'], expected: [], why: 'tag only exists on the inactive link_005 (B1)' },
+  ])('tags $tags → $expected — $why', ({ tags, expected }) => {
+    expect(tagIds('', tags)).toEqual(expected)
+  })
+
+  it.each([
+    { query: 'free', tags: ['beginner'], expected: ['link_003'], why: 'tag AND text prefix' },
+    { query: 'shop', tags: ['art'], expected: ['link_001'], why: 'text narrows the tag results' },
+    { query: 'zzz', tags: ['art'], expected: [], why: 'text matches nothing inside the tag results' },
+    { query: 'podcast', tags: ['art'], expected: [], why: 'text matches a link that lacks the tag' },
+  ])('"$query" + tags $tags → $expected — $why (TF4)', ({ query, tags, expected }) => {
+    expect(tagIds(query, tags)).toEqual(expected)
+  })
+})
