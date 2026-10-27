@@ -12,10 +12,11 @@ function setup(data?: unknown) {
 }
 
 function cardTitles(): string[] {
-  return screen.queryAllByRole('link').map((card) => {
-    const heading = within(card).getByRole('heading')
-    return heading.textContent ?? ''
-  })
+  return screen.queryAllByRole('article').map((card) => within(card).getByRole('heading').textContent ?? '')
+}
+
+function card(title: string | RegExp) {
+  return screen.getByRole('article', { name: title })
 }
 
 const ALL_ACTIVE_TITLES = [
@@ -40,27 +41,39 @@ describe('App (integration: typing in the search bar filters the rendered cards)
       expect(screen.queryByText('Book a commission')).not.toBeInTheDocument()
     })
 
-    it('renders tags on each card', () => {
+    it('renders each tag as an unpressed "Filter by tag …" button on its card (TF1, TF11)', () => {
       setup()
-      const prints = screen.getByRole('link', { name: /shop my prints/i })
-      expect(within(prints).getByText('shop')).toBeInTheDocument()
-      expect(within(prints).getByText('prints')).toBeInTheDocument()
+      const prints = card('Shop my prints')
+      for (const tag of ['shop', 'art', 'prints']) {
+        expect(within(prints).getByRole('button', { name: `Filter by tag ${tag}` })).toHaveAttribute('aria-pressed', 'false')
+      }
     })
 
     it('renders no description line (and never the text "null") for a link whose description is null (B4)', () => {
       setup()
-      const podcast = screen.getByRole('link', { name: /the creative break podcast/i })
-      expect(podcast).not.toHaveTextContent(/null/i)
+      expect(card('The Creative Break podcast')).not.toHaveTextContent(/null/i)
     })
   })
 
   describe('cards open the destination safely (PRD item 6, S4)', () => {
     it('each card is a link to its normalised https://example.com URL that opens in a new tab with rel="noopener noreferrer"', () => {
       setup()
-      const prints = screen.getByRole('link', { name: /shop my prints/i })
+      const prints = screen.getByRole('link', { name: 'Shop my prints' })
       expect(prints).toHaveAttribute('href', 'https://example.com/prints')
       expect(prints).toHaveAttribute('target', '_blank')
       expect(prints.getAttribute('rel')?.split(' ')).toEqual(expect.arrayContaining(['noopener', 'noreferrer']))
+    })
+
+    it('each card has exactly one link, its title inside the <h2>, and no tag button is nested in a link (TF8)', () => {
+      setup()
+      for (const article of screen.getAllByRole('article')) {
+        const links = within(article).getAllByRole('link')
+        expect(links).toHaveLength(1)
+        expect(links[0]?.closest('h2')).not.toBeNull()
+        for (const button of within(article).getAllByRole('button')) {
+          expect(button.closest('a')).toBeNull()
+        }
+      }
     })
   })
 
